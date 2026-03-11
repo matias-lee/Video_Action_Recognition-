@@ -22,17 +22,17 @@ This project requires **Python 3.10+** and a CUDA-enabled GPU for optimal traini
 To avoid C++ linking errors (such as `iJIT_NotifyEvent` with Intel MKL) on HPC clusters, it is highly recommended to install PyTorch via `pip` wheels within a Conda environment.
 
 **1. Create and activate a clean Conda environment:**
-`conda create -n video_action python=3.10 -y`
-`conda activate video_action`
+```conda create -n video_action python=3.10 -y```
+```conda activate video_action```
 
 **2. Install PyTorch with statically linked CUDA 11.8 binaries:**
-`pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`
+```pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118```
 
 **3. Install required data processing and plotting libraries:**
-`pip install opencv-python scikit-learn tqdm numpy Pillow matplotlib seaborn pylint`
+```pip install opencv-python scikit-learn tqdm numpy Pillow matplotlib seaborn pylint```
 
 **4. Install unrar (required to extract the UCF50 dataset):**
-`conda install -c conda-forge unrar -y`
+```conda install -c conda-forge unrar -y```
 
 ---
 
@@ -42,16 +42,16 @@ To avoid C++ linking errors (such as `iJIT_NotifyEvent` with Intel MKL) on HPC c
 ### 1. Download the Dataset
 We recommend storing the massive video files outside of the Git repository to prevent storage limits.
 
-`mkdir -p ./data`
-`cd ./data`
-`wget -c --no-check-certificate "https://www.crcv.ucf.edu/data/UCF50.rar"`
-`unrar x UCF50.rar`
-`cd ..`
+```mkdir -p ./data```
+```cd ./data```
+```wget -c --no-check-certificate "https://www.crcv.ucf.edu/data/UCF50.rar"```
+```unrar x UCF50.rar```
+```cd ..```
 
 ### 2. Extract Frames (Uniform Random Sampling)
 Deep learning vision models require discrete image tensors. Run the preprocessing script to iterate through the raw `.avi` files, divide them into temporal segments, and apply **uniform random sampling** to extract exactly 16 frames per video.
 
-`python preprocess.py`
+```python preprocess.py```
 
 *Note: Ensure your `RAW_DIR` and `OUT_DIR` paths in `preprocess.py` correctly point to your extracted UCF50 data.*
 
@@ -64,7 +64,7 @@ The training pipeline automatically handles the `GroupShuffleSplit`, applies dat
 
 To launch the training script on your GPU cluster:
 
-`python run.py --frame_dir ./data/UCF50_frames --n_classes 50 --batch_size 8 --model_type lrcn --cnn_backbone resnet34 --mode train`
+```python run.py --frame_dir ./data/UCF50_frames --n_classes 50 --batch_size 8 --model_type lrcn --cnn_backbone resnet34 --mode train```
 
 The script will automatically save the best performing model weights to `./models/best_model_wts.pt` and output the dataset splits to `./splits.npy` to guarantee reproducible evaluations.
 
@@ -77,7 +77,7 @@ The evaluation module computes comprehensive multiclass metrics, bypassing simpl
 
 To run the test suite using your saved model weights:
 
-`python run.py --frame_dir ./data/UCF50_frames --n_classes 50 --batch_size 8 --ckpt ./models/best_model_wts.pt --mode eval`
+```python run.py --frame_dir ./data/UCF50_frames --n_classes 50 --batch_size 8 --ckpt ./models/best_model_wts.pt --mode eval```
 
 **Evaluation Outputs:**
 1. **Overall Test Accuracy:** Top-1 classification accuracy.
