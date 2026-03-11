@@ -13,6 +13,7 @@ for video classification tasks. It includes functions for:
 import os
 import cv2
 import numpy as np
+import random
 
 from torchvision import transforms as transforms
 from torch.utils.data import DataLoader
@@ -21,42 +22,47 @@ from video_datasets import collate_fn_r3d_18, collate_fn_rnn
 
 def get_frames(vid, n_frames=1):
     """
-    Uniformly sample frames from a video file.
-
-    Args:
-        vid (str): Path to the video file.
-        n_frames (int): Number of frames to sample from the video.
-
-    Returns:
-        tuple: (frames, v_len)
-            - frames (list): List of sampled frames (as numpy arrays in RGB format).
-            - v_len (int): Total number of frames in the video.
-            
-    Notes:
-        - If the video cannot be opened or contains no frames, an empty list and 0 are returned.
-        - Frames are sampled at uniformly spaced indices.
+    Extract frames using uniform random sampling (Segment-based).
     """
     frames = []
     v_cap = cv2.VideoCapture(vid)
     if not v_cap.isOpened():
         print("Failed to open video:", vid)
         return frames, 0
+    
     v_len = int(v_cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    if v_len <= 0:
-        print("No frames found in video:", vid)
+    if v_len <= 0 or n_frames <= 0:
         v_cap.release()
         return frames, 0
-    frame_idx = np.linspace(0, v_len-1, n_frames+1, dtype=np.int16)
+    
+    # Divide the video into 'n_frames' segments
+    seg_size = max(1, v_len // n_frames)
+    frame_indices = []
+    
+    for i in range(n_frames):
+        start = i * seg_size
+        end = min((i + 1) * seg_size, v_len)
+        # Randomly sample one frame index within this segment
+        if start < end:
+            frame_indices.append(random.randint(start, end - 1))
+        else:
+            frame_indices.append(v_len - 1)
+            
+    # Read the chosen frames
     for idx in range(v_len):
         success, frame = v_cap.read()
         if not success:
             continue
-        if idx in frame_idx:
+        if idx in frame_indices:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frames.append(frame)
+            
+            # If we've collected all needed frames, we can break early
+            if len(frames) == n_frames:
+                break
+                
     v_cap.release()
     return frames, v_len
-
 
 def store_frames(frames, store_path):
     """

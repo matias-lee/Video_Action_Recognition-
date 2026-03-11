@@ -19,7 +19,7 @@ import os
 import glob
 from tqdm import tqdm
 import numpy as np
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import GroupShuffleSplit
 
 
 class VideoDataset(Dataset):
@@ -104,43 +104,49 @@ def load_dataset(frame_dir):
 
 def dataset_split(vid_dataset, tr_ratio, ts_ratio, seed=0):
     """
-    Split the dataset into training, validation, and test sets using stratified sampling.
-    
-    This function uses StratifiedShuffleSplit to ensure that each split has a representative
-    distribution of classes.
-    
-    Args:
-        vid_dataset (dict): Dictionary mapping video paths to labels.
-        tr_ratio (float): Proportion of the data to use for training.
-        ts_ratio (float): Proportion of the data to use for testing.
-        seed (int, optional): Random seed for reproducibility. Default is 0.
-    
-    Returns:
-        tuple: (tr_dataset, val_dataset, ts_dataset)
-            - tr_dataset (list): List of (video_path, label) tuples for the training set.
-            - val_dataset (list): List of (video_path, label) tuples for the validation set.
-            - ts_dataset (list): List of (video_path, label) tuples for the test set.
+    Split the dataset into training, validation, and test sets using GroupShuffleSplit
+    to prevent data leakage across UCF50 groups.
     """
-    vid_paths = np.array([vid_path for vid_path in vid_dataset.keys()])
-    vid_labels = np.array([vid_label for vid_label in vid_dataset.values()])
-    print('Splitting train/validation/test datasets....')
+    vid_paths = np.array(list(vid_dataset.keys()))
+    vid_labels = np.array(list(vid_dataset.values()))
+    
+    # Extract group IDs from filenames (e.g., v_BaseballPitch_g01_c01.avi -> g01)
+    groups = []
+    for path in vid_paths:
+        filename = os.path.basename(path)
+        parts = filename.split('_')
+        # Assuming standard UCF format, the group is the second to last element
+        if len(parts) >= 3 and parts[-2].startswith('g'):
+            groups.append(parts[-2])
+        else:
+            groups.append("unknown_group")
+    groups = np.array(groups)
+    
+    print('Splitting train/validation/test datasets with GroupShuffleSplit....')
 
-    # Test split using StratifiedShuffleSplit
-    ts_spliter = StratifiedShuffleSplit(n_splits=1, test_size=ts_ratio, random_state=seed)
-    for tr_val_idx, ts_idx in ts_spliter.split(vid_paths, vid_labels):
-        ts_paths, ts_labels = vid_paths[ts_idx], vid_labels[ts_idx]
-        tr_val_paths, tr_val_labels = vid_paths[tr_val_idx], vid_labels[tr_val_idx]
-    ts_dataset = [(ts_path, ts_label) for ts_path, ts_label in zip(ts_paths, ts_labels)]
+    # 1. Split off the Test set first
+    # We use 1 split, and the test_size is the requested ts_ratio
+    ts_splitter = GroupShuffleSplit(n_splits=1, test_size=ts_ratio, random_state=seed)
+    tr_val_idx, ts_idx = next(ts_splitter.split(vid_paths, vid_labels, groups))
+    
+    ts_paths, ts_labels = vid_paths[ts_idx], vid_labels[ts_idx]
+    tr_val_paths, tr_val_labels, tr_val_groups = vid_paths[tr_val_idx], vid_labels[tr_val_idx], groups[tr_val_idx]
+    
+    ts_dataset = [(p, l) for p, l in zip(ts_paths, ts_labels)]
 
-    # Train/validation split
-    val_ratio = 1 - tr_ratio - ts_ratio
-    val_wt = val_ratio / (tr_ratio + val_ratio)
-    val_spliter = StratifiedShuffleSplit(n_splits=1, test_size=val_wt, random_state=seed)
-    for tr_idx, val_idx in val_spliter.split(tr_val_paths, tr_val_labels):
-        tr_paths, tr_labels = tr_val_paths[tr_idx], tr_val_labels[tr_idx]
-        val_paths, val_labels = tr_val_paths[val_idx], tr_val_labels[val_idx]
-    tr_dataset = [(tr_path, tr_label) for tr_path, tr_label in zip(tr_paths, tr_labels)]
-    val_dataset = [(val_path, val_label) for val_path, val_label in zip(val_paths, val_labels)]
+    # 2. Split the remaining data into Train and Validation
+    # We must calculate the relative validation ratio from the remaining data
+    val_ratio = 1.0 - tr_ratio - ts_ratio
+    relative_val_ratio = val_ratio / (tr_ratio + val_ratio)
+    
+    val_splitter = GroupShuffleSplit(n_splits=1, test_size=relative_val_ratio, random_state=seed)
+    tr_idx, val_idx = next(val_splitter.split(tr_val_paths, tr_val_labels, tr_val_groups))
+    
+    tr_paths, tr_labels = tr_val_paths[tr_idx], tr_val_labels[tr_idx]
+    val_paths, val_labels = tr_val_paths[val_idx], tr_val_labels[val_idx]
+    
+    tr_dataset = [(p, l) for p, l in zip(tr_paths, tr_labels)]
+    val_dataset = [(p, l) for p, l in zip(val_paths, val_labels)]
 
     return tr_dataset, val_dataset, ts_dataset
 
