@@ -103,6 +103,12 @@ To run the test suite using your saved model weights:
 
 ---
 
+## Training Logs
+
+The complete training and validation progress, including epoch-by-epoch loss, dynamic learning rate adjustments, and accuracy metrics, is documented in the `training_logs.txt` file included in this repository. 
+
+These logs were captured directly from the high-performance computing cluster environment and serve as the programmatic verification of the model's convergence and its final ~75.8% classification accuracy.
+
 ## Repository Structure
 * `run.py`: Main execution script for training and evaluation.
 * `train.py`: Contains the core backpropagation and validation loops.
@@ -111,5 +117,6 @@ To run the test suite using your saved model weights:
 * `video_datasets.py`: Custom PyTorch `Dataset` and `GroupShuffleSplit` dataloaders.
 * `utils.py`: Transform pipelines and stochastic uniform frame sampling algorithms.
 * `preprocess.py`: Automated raw video to sequence-tensor conversion script.
+* `training_logs.txt`: Raw terminal output capturing the epoch-by-epoch training and validation metrics.
 
 

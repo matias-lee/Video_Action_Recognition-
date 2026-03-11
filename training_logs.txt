@@ -1,0 +1,239 @@
+(base) mlee346@cybertron:~/deeplearning/hw4/video_action_recognition-$ conda activate video_action
+(video_action) mlee346@cybertron:~/deeplearning/hw4/video_action_recognition-$ python run.py --frame_dir ./data/UCF50_frames --n_classes 50 --batc
+h_size 8 --mode train
+/home/mlee346/miniconda3/envs/video_action/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained'
+is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/mlee346/miniconda3/envs/video_action/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weig
+ht enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights
+=ResNet34_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet34_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Downloading: "https://download.pytorch.org/models/resnet34-b627a593.pth" to /home/mlee346/.cache/torch/hub/checkpoints/resnet34-b627a593.pth
+100%|███████████████| 83.3M/83.3M [00:02<00:00, 32.5MB/s]
+Loading video dataset....
+100%|██████████████████| 50/50 [00:00<00:00, 7819.07it/s]
+Splitting train/validation/test datasets with GroupShuffleSplit....
+Traceback (most recent call last):
+  File "/home/mlee346/deeplearning/hw4/video_action_recognition-/run.py", line 204, in <module>
+    main(args)
+  File "/home/mlee346/deeplearning/hw4/video_action_recognition-/run.py", line 162, in main
+    lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.5, patience=5, verbose=1)
+TypeError: ReduceLROnPlateau.__init__() got an unexpected keyword argument 'verbose'
+(video_action) mlee346@cybertron:~/deeplearning/hw4/video_action_recognition-$ python run.py --frame_dir ./data/UCF50_frames --n_classes 50 --batc
+h_size 8 --mode train
+/home/mlee346/miniconda3/envs/video_action/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained'
+is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/mlee346/miniconda3/envs/video_action/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weig
+ht enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights
+=ResNet34_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet34_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Loading video dataset....
+100%|██████████████████| 50/50 [00:00<00:00, 9805.73it/s]
+Splitting train/validation/test datasets with GroupShuffleSplit....
+Epoch 1/30; Current learning rate 3e-05
+100%|██████████████████| 596/596 [03:50<00:00,  2.58it/s]
+100%|████████████████████| 88/88 [00:36<00:00,  2.40it/s]
+Best model weights are updated at epoch 1!
+train loss: 3.520411, val loss: 2.926563, accuracy: 55.02
+------------------------------------------------------------
+
+Epoch 2/30; Current learning rate 3e-05
+100%|██████████████████| 596/596 [03:48<00:00,  2.61it/s]
+100%|████████████████████| 88/88 [00:36<00:00,  2.39it/s]
+Best model weights are updated at epoch 2!
+train loss: 2.645513, val loss: 2.362754, accuracy: 64.06
+------------------------------------------------------------
+
+Epoch 3/30; Current learning rate 3e-05
+100%|██████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|████████████████████| 88/88 [00:36<00:00,  2.38it/s]
+Best model weights are updated at epoch 3!
+train loss: 2.045687, val loss: 2.165652, accuracy: 68.36
+------------------------------------------------------------
+
+Epoch 4/30; Current learning rate 3e-05
+100%|██████████████████| 596/596 [03:48<00:00,  2.61it/s]
+100%|████████████████████| 88/88 [00:37<00:00,  2.37it/s]
+Best model weights are updated at epoch 4!
+train loss: 1.631900, val loss: 1.814083, accuracy: 73.46
+------------------------------------------------------------
+
+Epoch 5/30; Current learning rate 3e-05
+100%|██████████████████| 596/596 [03:49<00:00,  2.59it/s]
+100%|████████████████████| 88/88 [00:37<00:00,  2.38it/s]
+train loss: 1.324090, val loss: 1.701825, accuracy: 70.80
+------------------------------------------------------------
+
+Epoch 6/30; Current learning rate 3e-05
+100%|██████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|████████████████████| 88/88 [00:37<00:00,  2.37it/s]
+Best model weights are updated at epoch 6!
+train loss: 1.064853, val loss: 1.568814, accuracy: 74.32
+------------------------------------------------------------
+
+Epoch 7/30; Current learning rate 3e-05
+100%|██████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|████████████████████| 88/88 [00:35<00:00,  2.45it/s]
+Best model weights are updated at epoch 7!
+train loss: 0.856766, val loss: 1.368701, accuracy: 76.33
+------------------------------------------------------------
+
+Epoch 8/30; Current learning rate 3e-05
+100%|██████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|████████████████████| 88/88 [00:37<00:00,  2.34it/s]
+train loss: 0.698711, val loss: 1.387438, accuracy: 73.46
+------------------------------------------------------------
+
+Epoch 9/30; Current learning rate 3e-05
+100%|██████████████████| 596/596 [03:49<00:00,  2.59it/s]
+100%|████████████████████| 88/88 [00:37<00:00,  2.35it/s]
+train loss: 0.575733, val loss: 1.283560, accuracy: 75.18
+------------------------------------------------------------
+
+Epoch 10/30; Current learning rate 3e-05
+100%|██████████████████| 596/596 [03:50<00:00,  2.59it/s]
+100%|████████████████████| 88/88 [00:36<00:00,  2.42it/s]
+train loss: 0.466017, val loss: 1.280065, accuracy: 72.81
+------------------------------------------------------------
+
+Epoch 11/30; Current learning rate 3e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:50<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:36<00:00,  2.43it/s]
+train loss: 0.392852, val loss: 1.279780, accuracy: 73.46
+------------------------------------------------------------
+
+Epoch 12/30; Current learning rate 3e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:50<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.36it/s]
+train loss: 0.325827, val loss: 1.245455, accuracy: 74.82
+------------------------------------------------------------
+
+Epoch 13/30; Current learning rate 3e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:36<00:00,  2.42it/s]
+train loss: 0.280432, val loss: 1.185317, accuracy: 74.39
+------------------------------------------------------------
+
+Epoch 14/30; Current learning rate 3e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.35it/s]
+train loss: 0.225497, val loss: 1.130090, accuracy: 74.89
+------------------------------------------------------------
+
+Epoch 15/30; Current learning rate 3e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:48<00:00,  2.60it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.35it/s]
+train loss: 0.191407, val loss: 1.179723, accuracy: 74.53
+------------------------------------------------------------
+
+Epoch 16/30; Current learning rate 3e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.35it/s]
+train loss: 0.178338, val loss: 1.182011, accuracy: 73.96
+------------------------------------------------------------
+
+Epoch 17/30; Current learning rate 3e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:50<00:00,  2.58it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:36<00:00,  2.43it/s]
+train loss: 0.158071, val loss: 1.259013, accuracy: 72.60
+------------------------------------------------------------
+
+Epoch 18/30; Current learning rate 3e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.35it/s]
+train loss: 0.138398, val loss: 1.254897, accuracy: 73.67
+------------------------------------------------------------
+
+Epoch 19/30; Current learning rate 3e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:50<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:36<00:00,  2.42it/s]
+train loss: 0.122201, val loss: 1.147229, accuracy: 74.96
+------------------------------------------------------------
+
+Epoch 20/30; Current learning rate 3e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.35it/s]
+Loading best model weights!
+train loss: 0.103193, val loss: 1.211611, accuracy: 72.96
+------------------------------------------------------------
+
+Epoch 21/30; Current learning rate 1.5e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:50<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:36<00:00,  2.43it/s]
+train loss: 0.667144, val loss: 1.284084, accuracy: 75.11
+------------------------------------------------------------
+
+Epoch 22/30; Current learning rate 1.5e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.35it/s]
+train loss: 0.553304, val loss: 1.276040, accuracy: 75.54
+------------------------------------------------------------
+
+Epoch 23/30; Current learning rate 1.5e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:36<00:00,  2.43it/s]
+train loss: 0.482536, val loss: 1.251050, accuracy: 75.04
+------------------------------------------------------------
+
+Epoch 24/30; Current learning rate 1.5e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:50<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.36it/s]
+train loss: 0.427272, val loss: 1.189538, accuracy: 75.82
+------------------------------------------------------------
+
+Epoch 25/30; Current learning rate 1.5e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:50<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.35it/s]
+train loss: 0.377106, val loss: 1.174962, accuracy: 75.61
+------------------------------------------------------------
+
+Epoch 26/30; Current learning rate 1.5e-05
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.36it/s]
+Loading best model weights!
+train loss: 0.330187, val loss: 1.260565, accuracy: 73.60
+------------------------------------------------------------
+
+Epoch 27/30; Current learning rate 7.5e-06
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:37<00:00,  2.37it/s]
+train loss: 0.706902, val loss: 1.364944, accuracy: 75.04
+------------------------------------------------------------
+
+Epoch 28/30; Current learning rate 7.5e-06
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:39<00:00,  2.22it/s]
+train loss: 0.645852, val loss: 1.367930, accuracy: 74.82
+------------------------------------------------------------
+
+Epoch 29/30; Current learning rate 7.5e-06
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.60it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:36<00:00,  2.43it/s]
+Best model weights are updated at epoch 29!
+train loss: 0.594841, val loss: 1.272246, accuracy: 76.90
+------------------------------------------------------------
+
+Epoch 30/30; Current learning rate 7.5e-06
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 596/596 [03:49<00:00,  2.59it/s]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 88/88 [00:36<00:00,  2.42it/s]
+train loss: 0.553806, val loss: 1.241817, accuracy: 76.54
+------------------------------------------------------------
+
+(video_action) mlee346@cybertron:~/deeplearning/hw4/video_action_recognition-$ python run.py --frame_dir ./data/UCF50_frames --n_classes 50 --batc
+h_size 8 --ckpt ./models/best_model_wts.pt --mode eval
+/home/mlee346/miniconda3/envs/video_action/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained'
+is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/mlee346/miniconda3/envs/video_action/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weig
+ht enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights
+=ResNet34_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet34_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 33/33 [00:12<00:00,  2.69it/s]
+--- Evaluation Results ---
+Overall Test Accuracy: 75.8157%
+Macro F1 Score: 0.7321
+Macro AUC Score (OvR): 0.9720
+--------------------------
+(video_action) mlee346@cybertron:~/deeplearning/hw4/video_action_recognition-$ tmux capture-pane -S -10000 -p > training_logs.txt
+
