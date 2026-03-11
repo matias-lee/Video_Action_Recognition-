@@ -1,169 +1,99 @@
-# Video Classification with HMDB51
+# Video Action Recognition with UCF50 using LRCN
 
-This project implements a video classification pipeline using the HMDB51 dataset. It leverages a Long-term Recurrent Convolutional Network (LRCN) model that extracts spatial features from individual video frames via a ResNet backbone and learns temporal dynamics through an LSTM. The project includes scripts for preprocessing, training, and testing the model.
+This repository implements a robust video classification pipeline for the **UCF50** dataset using a Long-term Recurrent Convolutional Network (LRCN). The architecture leverages a pre-trained ResNet34 backbone to extract spatial features from individual frames and an LSTM to model temporal dynamics across the video sequence.
+
+A critical focus of this implementation is the strict prevention of data leakage. Videos in UCF50 are grouped by actors and environments. This pipeline utilizes a `GroupShuffleSplit` strategy to mathematically guarantee that clips from the same group do not cross the train/test boundaries, ensuring an honest evaluation of the model's ability to generalize temporal actions.
 
 ---
 
 ## Table of Contents
-
-- [Dataset Preparation](#dataset-preparation)
-- [Environment Setup](#environment-setup)
-- [Preprocessing and Frame Extraction](#preprocessing-and-frame-extraction)
-- [Training the Model](#training-the-model)
-- [Testing and Evaluation](#testing-and-evaluation)
-- [Project Structure](#project-structure)
-- [Customization and Hyperparameters](#customization-and-hyperparameters)
-
----
-
-## Dataset Preparation
-
-### Step 0: Download and Unzip Dataset
-
-1. **Download Dataset:**  
-   Download the HMDB51 dataset from [Kaggle](https://www.kaggle.com/datasets/easonlll/hmdb51). This dataset contains videos of 51 different human action classes.
-
-2. **Unzip and Organize:**  
-   Unzip the downloaded dataset. The expected folder structure should be as follows:
-   
-        - HMDB51
-            - Action_Class1
-            - Action_Class2
-            ... ... ... ...
-            - Action_Class51
-
-Each subdirectory represents a different action class.
+1. [Environment Setup](#environment-setup)
+2. [Data Preparation & Preprocessing](#data-preparation--preprocessing)
+3. [Training the Model](#training-the-model)
+4. [Testing and Evaluation Metrics](#testing-and-evaluation-metrics)
+5. [Repository Structure](#repository-structure)
 
 ---
 
 ## Environment Setup
 
-1. **Python Version:**  
-This project requires Python 3.7 or higher.
+This project requires **Python 3.10+** and a CUDA-enabled GPU for optimal training speed. 
 
-2. **Dependencies:**  
-Install the required Python packages by running:
+To avoid C++ linking errors (such as `iJIT_NotifyEvent` with Intel MKL) on HPC clusters, it is highly recommended to install PyTorch via `pip` wheels within a Conda environment.
 
-```bash
-pip install -r requirements.txt
+**1. Create and activate a clean Conda environment:**
+`conda create -n video_action python=3.10 -y`
+`conda activate video_action`
 
-# Key Libraries
+**2. Install PyTorch with statically linked CUDA 11.8 binaries:**
+`pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`
 
-- **PyTorch**
-- **torchvision**
-- **OpenCV**
-- **scikit-learn**
-- **tqdm**
-- **numpy**
-- **Pillow**
+**3. Install required data processing and plotting libraries:**
+`pip install opencv-python scikit-learn tqdm numpy Pillow matplotlib seaborn pylint`
 
-## Hardware Requirements
-
-A CUDA-enabled GPU is recommended for training. The code automatically detects GPU availability.
+**4. Install unrar (required to extract the UCF50 dataset):**
+`conda install -c conda-forge unrar -y`
 
 ---
 
-## Preprocessing and Frame Extraction
 
-Before training, the raw video files must be converted into frame sequences. The preprocessing module includes functions for:
+## Data Preparation & Preprocessing
 
-### Uniform Frame Sampling
+### 1. Download the Dataset
+We recommend storing the massive video files outside of the Git repository to prevent storage limits.
 
-- The `get_frames` function uses OpenCV to sample a fixed number of frames per video.
+`mkdir -p ./data`
+`cd ./data`
+`wget -c --no-check-certificate "https://www.crcv.ucf.edu/data/UCF50.rar"`
+`unrar x UCF50.rar`
+`cd ..`
 
-### Saving Frames to Disk
+### 2. Extract Frames (Uniform Random Sampling)
+Deep learning vision models require discrete image tensors. Run the preprocessing script to iterate through the raw `.avi` files, divide them into temporal segments, and apply **uniform random sampling** to extract exactly 16 frames per video.
 
-- The `store_frames` function writes the extracted frames as JPEG images.
+`python preprocess.py`
 
-Integrate these functions into a preprocessing script (e.g., `preprocess.py`) to convert all videos into folders of extracted frames. The resulting folder structure should mirror the original dataset structure:
-
+*Note: Ensure your `RAW_DIR` and `OUT_DIR` paths in `preprocess.py` correctly point to your extracted UCF50 data.*
 
 ---
+
 
 ## Training the Model
 
-### Step 1: Run Training
+The training pipeline automatically handles the `GroupShuffleSplit`, applies data augmentation (Random Horizontal Flips, Random Affine transformations), normalizes the tensors to ImageNet standards, and executes the training loop using a `ReduceLROnPlateau` scheduler.
 
-#### Configure Training Parameters
+To launch the training script on your GPU cluster:
 
-The training is managed via a bash script (e.g., `train.sh`) that calls the main training module.  
-**Important:** Update the `--frame_dir` argument in the script to point to the directory where your preprocessed frame data is stored. You can also adjust other parameters (e.g., number of frames per video, batch size, learning rate) to see how they affect the experiment.
+`python run.py --frame_dir ./data/UCF50_frames --n_classes 50 --batch_size 8 --model_type lrcn --cnn_backbone resnet34 --mode train`
 
-#### Run the Training Script
-
-Execute the training script from your terminal:
-
-```bash
-bash train.sh
-
-## During Training, the Script Will:
-
-- **Load the frame dataset.**
-- **Split the dataset** into training, validation, and test sets using stratified sampling.
-- **Apply data augmentation** techniques (resizing, random flips, affine transformations).
-- **Create custom PyTorch Datasets and DataLoaders.**
-- **Initialize the LRCN model** using a specified ResNet backbone.
-- **Set up the loss function, optimizer, and learning rate scheduler.**
-- **Run the training loop** while tracking loss and accuracy, saving the best model weights.
+The script will automatically save the best performing model weights to `./models/best_model_wts.pt` and output the dataset splits to `./splits.npy` to guarantee reproducible evaluations.
 
 ---
 
-## Testing and Evaluation
 
-### Step 2: Run Testing
+## Testing and Evaluation Metrics
 
-- **Configure Testing Parameters:**  
-  Update the `--ckpt` argument in your testing script (e.g., `test.sh`) to point to the saved best model weights generated during training.
+The evaluation module computes comprehensive multiclass metrics, bypassing simple accuracy to provide a robust assessment of the model across all 50 action categories.
 
-- **Run the Testing Script:**  
-  Execute the testing script from your terminal:
-  
-```bash
-bash test.sh
-## Testing Script Overview
+To run the test suite using your saved model weights:
 
-The testing script will:
+`python run.py --frame_dir ./data/UCF50_frames --n_classes 50 --batch_size 8 --ckpt ./models/best_model_wts.pt --mode eval`
 
-- **Load the dataset splits** (previously saved during training).
-- **Create a DataLoader for the test set.**
-- **Load the trained model checkpoint.**
-- **Evaluate the model** on the test data by computing overall accuracy, generating classification reports, and optionally producing confusion matrices.
+**Evaluation Outputs:**
+1. **Overall Test Accuracy:** Top-1 classification accuracy.
+2. **Macro F1 Score:** Unweighted mean of the F1 scores for each class (robust to class imbalances).
+3. **Macro AUC Score (OvR):** Area Under the ROC Curve computed using the One-vs-Rest strategy and softmax probabilities.
+4. **Confusion Matrix Heatmap:** A high-resolution 50x50 visual matrix (`ucf50_confusion_matrix.png`) is automatically generated and saved to the root directory for inclusion in experimental writeups.
 
 ---
 
-## Customization and Hyperparameters
+## Repository Structure
+* `run.py`: Main execution script for training and evaluation.
+* `train.py`: Contains the core backpropagation and validation loops.
+* `test.py`: Houses the evaluation loop, multiclass metrics (AUC, F1), and confusion matrix plotter.
+* `models.py`: Defines the LRCN PyTorch architecture (ResNet34 + LSTM).
+* `video_datasets.py`: Custom PyTorch `Dataset` and `GroupShuffleSplit` dataloaders.
+* `utils.py`: Transform pipelines and stochastic uniform frame sampling algorithms.
+* `preprocess.py`: Automated raw video to sequence-tensor conversion script.
 
-You can modify several parameters to experiment with different settings:
 
-### Data Parameters
-
-- `--frame_dir`: Path to your preprocessed frames.
-- `--fr_per_vid`: Number of frames to sample per video.
-
-### Model Parameters
-
-- `--model_type`: Choose between `'lrcn'` (default) or other supported models.
-- `--cnn_backbone`: Options include `resnet18`, `resnet34`, `resnet50`, `resnet101`, or `resnet152`.
-- `--rnn_hidden_size` and `--rnn_n_layers`: Configure the LSTM network.
-
-### Training Parameters
-
-- `--batch_size`, `--learning_rate`, `--n_epochs`, and `--dropout` control the training dynamics.
-- `--train_size` and `--test_size` determine dataset splits.
-
-By tweaking these parameters, you can study their impact on model performance and experiment with different network configurations.
-
----
-
-## Summary of Steps
-
-- **Step 0: Dataset Preparation**  
-  Download, unzip, and organize the HMDB51 dataset into subdirectories by action class.
-
-- **Step 1: Run Training**  
-  Execute `train.sh` after configuring the `--frame_dir` and other hyperparameters to train the model.
-
-- **Step 2: Run Testing**  
-  Execute `test.sh` after updating the `--ckpt` argument to point to the best model checkpoint to evaluate the model.
-
-Happy Training!
