@@ -118,5 +118,6 @@ These logs were captured directly from the high-performance computing cluster en
 * `utils.py`: Transform pipelines and stochastic uniform frame sampling algorithms.
 * `preprocess.py`: Automated raw video to sequence-tensor conversion script.
 * `training_logs.txt`: Raw terminal output capturing the epoch-by-epoch training and validation metrics.
+* `pylint_report.txt`: Verification of code quality, demonstrating a perfect 10.00/10 Pylint score according to project-specific stylistic rules.
 
 
