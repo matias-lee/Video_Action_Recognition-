@@ -22,8 +22,10 @@ This project requires **Python 3.10+** and a CUDA-enabled GPU for optimal traini
 To avoid C++ linking errors (such as `iJIT_NotifyEvent` with Intel MKL) on HPC clusters, it is highly recommended to install PyTorch via `pip` wheels within a Conda environment.
 
 **1. Create and activate a clean Conda environment:**
-```conda create -n video_action python=3.10 -y```
-```conda activate video_action```
+```bash
+  conda create -n video_action python=3.10 -y
+  conda activate video_action
+```
 
 **2. Install PyTorch with statically linked CUDA 11.8 binaries:**
 ```pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118```
