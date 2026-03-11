@@ -14,15 +14,20 @@ Functions:
     - get_epoch_loss: Computes the average loss and accuracy over an epoch.
 """
 
-import os
 import copy
-from tqdm import tqdm
-import torch
+import os
 
-def train(dataloaders, model, criterion, optimizer, scheduler, device, optim_model_wts_dir, n_epochs=30):
+import torch
+from tqdm import tqdm
+
+
+# pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals
+def train(
+    dataloaders, model, criterion, optimizer, scheduler, device, optim_model_wts_dir, n_epochs=30
+):
     """
     Train and validate the model over a given number of epochs.
-    
+
     This function performs the training loop for a video classification model.
     It iterates through the specified number of epochs, updates model weights
     using backpropagation, and evaluates model performance on a validation set.
@@ -44,43 +49,49 @@ def train(dataloaders, model, criterion, optimizer, scheduler, device, optim_mod
             - loss_hist (dict): Dictionary containing lists of training and validation losses for each epoch.
             - acc_hist (dict): Dictionary containing lists of training and validation accuracies for each epoch.
     """
-    loss_hist = {'train': [], 'val': []}
-    acc_hist = {'train': [], 'val': []}
+    loss_hist = {"train": [], "val": []}
+    acc_hist = {"train": [], "val": []}
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_val_acc = 0.0
 
     for epoch in range(n_epochs):
         current_lr = get_learning_rate(optimizer)
-        print('Epoch {}/{}; Current learning rate {}'.format(epoch+1, n_epochs, current_lr))
+        print("Epoch {}/{}; Current learning rate {}".format(epoch + 1, n_epochs, current_lr))
 
         # Training phase
         model.train()
-        train_loss, train_accuracy = get_epoch_loss(model, criterion, dataloaders['train'], device, optimizer)
-        loss_hist['train'].append(train_loss)
-        acc_hist['train'].append(train_accuracy)
+        train_loss, train_accuracy = get_epoch_loss(
+            model, criterion, dataloaders["train"], device, optimizer
+        )
+        loss_hist["train"].append(train_loss)
+        acc_hist["train"].append(train_accuracy)
 
         # Validation phase
         model.eval()
         with torch.no_grad():
-            val_loss, val_accuracy = get_epoch_loss(model, criterion, dataloaders['val'], device)
+            val_loss, val_accuracy = get_epoch_loss(model, criterion, dataloaders["val"], device)
         if val_accuracy > best_val_acc:
             best_val_acc = val_accuracy
             best_model_wts = copy.deepcopy(model.state_dict())
-            best_model_name = 'best_model_wts.pt'
+            best_model_name = "best_model_wts.pt"
             best_model_path = os.path.join(optim_model_wts_dir, best_model_name)
             torch.save(best_model_wts, best_model_path)
-            print('Best model weights are updated at epoch {}!'.format(epoch+1))
-        loss_hist['val'].append(val_loss)
-        acc_hist['val'].append(val_accuracy)
+            print("Best model weights are updated at epoch {}!".format(epoch + 1))
+        loss_hist["val"].append(val_loss)
+        acc_hist["val"].append(val_accuracy)
 
         # Update learning rate based on validation loss
         scheduler.step(val_loss)
         if current_lr != get_learning_rate(optimizer):
-            print('Loading best model weights!')
+            print("Loading best model weights!")
             model.load_state_dict(best_model_wts)
 
-        print("train loss: {:.6f}, val loss: {:.6f}, accuracy: {:.2f}".format(train_loss, val_loss, 100*val_accuracy))
+        print(
+            "train loss: {:.6f}, val loss: {:.6f}, accuracy: {:.2f}".format(
+                train_loss, val_loss, 100 * val_accuracy
+            )
+        )
         print("-" * 60)
         print()
 
@@ -88,27 +99,29 @@ def train(dataloaders, model, criterion, optimizer, scheduler, device, optim_mod
     model.load_state_dict(best_model_wts)
     return model, loss_hist, acc_hist
 
+
 def get_learning_rate(optimizer):
     """
     Retrieve the current learning rate from the optimizer.
-    
+
     Args:
         optimizer (torch.optim.Optimizer): The optimizer from which to get the learning rate.
-    
+
     Returns:
         float: The current learning rate.
     """
     for param_group in optimizer.param_groups:
-        return param_group['lr']
+        return param_group["lr"]
+
 
 def batch_correct_preds(output, target):
     """
     Compute the number of correct predictions for a mini-batch.
-    
+
     Args:
         output (torch.Tensor): Model outputs (logits) with shape (batch_size, num_classes).
         target (torch.Tensor): True labels with shape (batch_size).
-    
+
     Returns:
         int: Number of correct predictions in the mini-batch.
     """
@@ -116,16 +129,17 @@ def batch_correct_preds(output, target):
     correct_preds = pred.eq(target.view_as(pred)).sum().item()
     return correct_preds
 
+
 def get_batch_loss(criterion, output, target, optimizer=None):
     """
     Compute the loss for a mini-batch and perform backpropagation (if optimizer is provided).
-    
+
     Args:
         criterion (callable): Loss function.
         output (torch.Tensor): Model outputs for the mini-batch.
         target (torch.Tensor): True labels for the mini-batch.
         optimizer (torch.optim.Optimizer, optional): Optimizer to update model weights. If None, no backpropagation is performed.
-    
+
     Returns:
         tuple: (loss_value, n_batch_correct_preds)
             - loss_value (float): Loss value for the mini-batch.
@@ -139,6 +153,7 @@ def get_batch_loss(criterion, output, target, optimizer=None):
         loss.backward()
         optimizer.step()
     return loss.item(), n_batch_correct_preds
+
 
 def get_epoch_loss(model, criterion, dataloader, device, optimizer=None):
     """

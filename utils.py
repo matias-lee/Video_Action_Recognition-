@@ -1,7 +1,8 @@
+# pylint: disable=no-member
 """
 Module: utils.py
 
-This module provides helper functions for video processing and data transformations 
+This module provides helper functions for video processing and data transformations
 for video classification tasks. It includes functions for:
     - Uniformly sampling frames from videos.
     - Storing extracted frames as JPEG images.
@@ -11,12 +12,10 @@ for video classification tasks. It includes functions for:
 """
 
 import os
-import cv2
-import numpy as np
 import random
-
-from torchvision import transforms as transforms
+import cv2
 from torch.utils.data import DataLoader
+from torchvision import transforms
 from video_datasets import collate_fn_r3d_18, collate_fn_rnn
 
 
@@ -29,16 +28,16 @@ def get_frames(vid, n_frames=1):
     if not v_cap.isOpened():
         print("Failed to open video:", vid)
         return frames, 0
-    
+
     v_len = int(v_cap.get(cv2.CAP_PROP_FRAME_COUNT))
     if v_len <= 0 or n_frames <= 0:
         v_cap.release()
         return frames, 0
-    
+
     # Divide the video into 'n_frames' segments
     seg_size = max(1, v_len // n_frames)
     frame_indices = []
-    
+
     for i in range(n_frames):
         start = i * seg_size
         end = min((i + 1) * seg_size, v_len)
@@ -47,7 +46,7 @@ def get_frames(vid, n_frames=1):
             frame_indices.append(random.randint(start, end - 1))
         else:
             frame_indices.append(v_len - 1)
-            
+
     # Read the chosen frames
     for idx in range(v_len):
         success, frame = v_cap.read()
@@ -56,13 +55,14 @@ def get_frames(vid, n_frames=1):
         if idx in frame_indices:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frames.append(frame)
-            
+
             # If we've collected all needed frames, we can break early
             if len(frames) == n_frames:
                 break
-                
+
     v_cap.release()
     return frames, v_len
+
 
 def store_frames(frames, store_path):
     """
@@ -85,7 +85,7 @@ def store_frames(frames, store_path):
         cv2.imwrite(path_to_frame, frame)
 
 
-def transform_stats(model='lrcn'):
+def transform_stats(model="lrcn"):
     """
     Retrieve transformation statistics based on the model type.
 
@@ -105,16 +105,16 @@ def transform_stats(model='lrcn'):
     Raises:
         ValueError: If an undefined model type is provided.
     """
-    if model == 'lrcn':
+    if model == "lrcn":
         h, w = 224, 224
         mean = [0.485, 0.456, 0.406]
         std = [0.229, 0.224, 0.225]
-    elif model == '3dcnn':
+    elif model == "3dcnn":
         h, w = 112, 112
         mean = [0.43216, 0.394666, 0.37645]
         std = [0.22803, 0.22145, 0.216989]
     else:
-        raise ValueError('model_type arg is undefined....')
+        raise ValueError("model_type arg is undefined....")
     return h, w, mean, std
 
 
@@ -136,22 +136,26 @@ def compose_data_transforms(height, width, mean, std):
             - train_transforms: Composed transforms for the training set.
             - val_test_transforms: Composed transforms for the validation/test set.
     """
-    train_transforms = transforms.Compose([
-        transforms.Resize((height, width)),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean, std),
-    ])
-    val_test_transforms = transforms.Compose([
-        transforms.Resize((height, width)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean, std),
-    ])
+    train_transforms = transforms.Compose(
+        [
+            transforms.Resize((height, width)),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std),
+        ]
+    )
+    val_test_transforms = transforms.Compose(
+        [
+            transforms.Resize((height, width)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std),
+        ]
+    )
     return train_transforms, val_test_transforms
 
 
-def train_val_dloaders(train_dataset, val_dataset, batch_size, model='lrcn'):
+def train_val_dloaders(train_dataset, val_dataset, batch_size, model="lrcn"):
     """
     Create DataLoaders for training and validation datasets.
 
@@ -169,20 +173,24 @@ def train_val_dloaders(train_dataset, val_dataset, batch_size, model='lrcn'):
         dict: Dictionary with keys 'train' and 'val' mapping to their respective DataLoaders.
     """
     if model == "lrcn":
-        train_dl = DataLoader(train_dataset, batch_size=batch_size,
-                              shuffle=True, collate_fn=collate_fn_rnn)
-        val_dl = DataLoader(val_dataset, batch_size=2 * batch_size,
-                            shuffle=False, collate_fn=collate_fn_rnn)
+        train_dl = DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn_rnn
+        )
+        val_dl = DataLoader(
+            val_dataset, batch_size=2 * batch_size, shuffle=False, collate_fn=collate_fn_rnn
+        )
     else:
-        train_dl = DataLoader(train_dataset, batch_size=batch_size,
-                              shuffle=True, collate_fn=collate_fn_r3d_18)
-        val_dl = DataLoader(val_dataset, batch_size=2 * batch_size,
-                            shuffle=False, collate_fn=collate_fn_r3d_18)
-    dataloaders = {'train': train_dl, 'val': val_dl}
+        train_dl = DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn_r3d_18
+        )
+        val_dl = DataLoader(
+            val_dataset, batch_size=2 * batch_size, shuffle=False, collate_fn=collate_fn_r3d_18
+        )
+    dataloaders = {"train": train_dl, "val": val_dl}
     return dataloaders
 
 
-def test_dloaders(test_dataset, batch_size, model='lrcn'):
+def test_dloaders(test_dataset, batch_size, model="lrcn"):
     """
     Create a DataLoader for the test dataset.
 
@@ -198,11 +206,12 @@ def test_dloaders(test_dataset, batch_size, model='lrcn'):
         dict: Dictionary with key 'test' mapping to the test DataLoader.
     """
     if model == "lrcn":
-        test_dl = DataLoader(test_dataset, batch_size=2 * batch_size,
-                             shuffle=False, collate_fn=collate_fn_rnn)
+        test_dl = DataLoader(
+            test_dataset, batch_size=2 * batch_size, shuffle=False, collate_fn=collate_fn_rnn
+        )
     else:
-        test_dl = DataLoader(test_dataset, batch_size=2 * batch_size,
-                             shuffle=False, collate_fn=collate_fn_r3d_18)
-    dataloaders = {'test': test_dl}
+        test_dl = DataLoader(
+            test_dataset, batch_size=2 * batch_size, shuffle=False, collate_fn=collate_fn_r3d_18
+        )
+    dataloaders = {"test": test_dl}
     return dataloaders
-

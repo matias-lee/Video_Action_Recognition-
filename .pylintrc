@@ -1,0 +1,10 @@
+[MASTER]
+disable=
+    line-too-long,
+    consider-using-f-string,
+    consider-using-from-import,
+    super-with-arguments,
+    too-few-public-methods,
+    missing-docstring,
+    redefined-outer-name,
+    too-many-locals

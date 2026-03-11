@@ -18,25 +18,29 @@ the following:
     - Creates a DataLoader for the test set.
     - Loads the trained model checkpoint.
     - Evaluates the model on the test set and prints overall test accuracy.
-    
+
 The module also includes a helper function for parsing command-line arguments.
 """
 
-import os
 import argparse
+import os
+from test import (
+    get_multiclass_metrics,
+    plot_and_save_confusion_matrix,
+    test,
+)
 
+import numpy as np
 import torch
 import torch.nn as nn
 from torch import optim
-from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-import numpy as np
-
-from video_datasets import VideoDataset, load_dataset, dataset_split
-from utils import transform_stats, compose_data_transforms, train_val_dloaders, test_dloaders
 from models import LRCN
 from train import train
-from test import test, get_test_report, get_confusion_matrix, get_multiclass_metrics,plot_and_save_confusion_matrix
+from utils import compose_data_transforms, test_dloaders, train_val_dloaders, transform_stats
+from video_datasets import VideoDataset, dataset_split, load_dataset
+
 
 def args_parser():
     """
@@ -44,7 +48,7 @@ def args_parser():
 
     Returns:
         argparse.Namespace: Parsed command-line arguments.
-        
+
     Arguments include:
         -fd/--frame_dir: Directory for storing video frames.
         -trs/--train_size: Proportion of data to use for training (default 0.7).
@@ -63,30 +67,58 @@ def args_parser():
         -lr/--learning_rate: Learning rate for training (default 3e-5).
         -ne/--n_epochs: Number of training epochs (default 30).
     """
-    parser = argparse.ArgumentParser(description='Video Classification Training')
+    parser = argparse.ArgumentParser(description="Video Classification Training")
 
-    parser.add_argument('-fd', '--frame_dir', help='Directory for storing video frames')
-    parser.add_argument('-trs', '--train_size', type=float, default=0.7, help='Train set size')
-    parser.add_argument('-tss', '--test_size', type=float, default=0.1, help='Test set size')
-    parser.add_argument('-fpv', '--fr_per_vid', type=int, default=16, help='Number of frames per video')
-    parser.add_argument('-nc', '--n_classes', type=int, help='Number of classes for the classification task', required=True)
+    parser.add_argument("-fd", "--frame_dir", help="Directory for storing video frames")
+    parser.add_argument("-trs", "--train_size", type=float, default=0.7, help="Train set size")
+    parser.add_argument("-tss", "--test_size", type=float, default=0.1, help="Test set size")
+    parser.add_argument(
+        "-fpv", "--fr_per_vid", type=int, default=16, help="Number of frames per video"
+    )
+    parser.add_argument(
+        "-nc",
+        "--n_classes",
+        type=int,
+        help="Number of classes for the classification task",
+        required=True,
+    )
 
-    parser.add_argument('-c', '--ckpt', help='Path for loading trained model checkpoints')
-    parser.add_argument('-mt', '--model_type', help='3D CNN or LRCN', default='lrcn')
-    parser.add_argument('-cnn', '--cnn_backbone', default='resnet34', help='2D CNN backbone - options: resnet18, resnet34, resnet50, resnet101, resnet152')
-    parser.add_argument('-p', '--pretrained', help='Use pretrained 2D CNN backbone', default=True)
-    parser.add_argument('-rhs', '--rnn_hidden_size', type=int, default=100, help='Number of neurons in the RNN/LSTM hidden layer')
-    parser.add_argument('-rnl', '--rnn_n_layers', type=int, default=1, help='Number of RNN/LSTM layers')
+    parser.add_argument("-c", "--ckpt", help="Path for loading trained model checkpoints")
+    parser.add_argument("-mt", "--model_type", help="3D CNN or LRCN", default="lrcn")
+    parser.add_argument(
+        "-cnn",
+        "--cnn_backbone",
+        default="resnet34",
+        help="2D CNN backbone - options: resnet18, resnet34, resnet50, resnet101, resnet152",
+    )
+    parser.add_argument("-p", "--pretrained", help="Use pretrained 2D CNN backbone", default=True)
+    parser.add_argument(
+        "-rhs",
+        "--rnn_hidden_size",
+        type=int,
+        default=100,
+        help="Number of neurons in the RNN/LSTM hidden layer",
+    )
+    parser.add_argument(
+        "-rnl", "--rnn_n_layers", type=int, default=1, help="Number of RNN/LSTM layers"
+    )
 
-    parser.add_argument('-m', '--mode', type=str, default='train', help="Either 'train' or 'eval'", required=True)
-    parser.add_argument('-bs', '--batch_size', type=int, help='Mini-batch size', required=True)
-    parser.add_argument('-d', '--dropout', type=float, default=0.1, help='Dropout rate for regularization')
-    parser.add_argument('-lr', '--learning_rate', type=float, default=3e-5, help='Learning rate for model training')
-    parser.add_argument('-ne', '--n_epochs', type=int, default=30, help='Number of training epochs')
+    parser.add_argument(
+        "-m", "--mode", type=str, default="train", help="Either 'train' or 'eval'", required=True
+    )
+    parser.add_argument("-bs", "--batch_size", type=int, help="Mini-batch size", required=True)
+    parser.add_argument(
+        "-d", "--dropout", type=float, default=0.1, help="Dropout rate for regularization"
+    )
+    parser.add_argument(
+        "-lr", "--learning_rate", type=float, default=3e-5, help="Learning rate for model training"
+    )
+    parser.add_argument("-ne", "--n_epochs", type=int, default=30, help="Number of training epochs")
 
     args = parser.parse_args()
     return args
 
+# pylint: disable=too-many-locals, too-many-statements, redefined-outer-name
 def main(args):
     """
     Main function to execute training or evaluation based on the parsed command-line arguments.
@@ -105,7 +137,7 @@ def main(args):
         - Creates the test DataLoader.
         - Loads the trained model checkpoint.
         - Evaluates the model on the test set and prints the overall test accuracy.
-    
+
     Args:
         args (argparse.Namespace): Parsed command-line arguments.
     """
@@ -123,33 +155,40 @@ def main(args):
     dropout = args.dropout
     pretrained = args.pretrained
     cnn_backbone = args.cnn_backbone
-    ckpt = args.ckpt
 
     # Training parameters
     mode = args.mode
     batch_size = args.batch_size
     n_epochs = args.n_epochs
     learning_rate = args.learning_rate
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Load transformation statistics and create data augmentation transforms
     h, w, mean, std = transform_stats(model_type)
     tr_transforms, val_ts_transforms = compose_data_transforms(h, w, mean, std)
 
     # Initialize the model (LRCN)
-    model = LRCN(hidden_size=rnn_hidden_size, n_layers=rnn_n_layers, dropout_rate=dropout,
-                 n_classes=n_classes, pretrained=pretrained, cnn_model=cnn_backbone)
+    model = LRCN(
+        hidden_size=rnn_hidden_size,
+        n_layers=rnn_n_layers,
+        dropout_rate=dropout,
+        n_classes=n_classes,
+        pretrained=pretrained,
+        cnn_model=cnn_backbone,
+    )
 
-    if mode == 'train':
+    if mode == "train":
         # Load dataset and split into train/validation/test
-        vid_dataset, label_dict = load_dataset(frame_dir)
+        vid_dataset, _ = load_dataset(frame_dir)
         tr_split, val_split, ts_split = dataset_split(vid_dataset, tr_size, ts_size)
 
         # Save the splits for reproducibility and later use in evaluation
-        splits = {'train': np.array(tr_split),
-                  'val': np.array(val_split),
-                  'test': np.array(ts_split)}
-        np.save('./splits.npy', splits)
+        splits = {
+            "train": np.array(tr_split),
+            "val": np.array(val_split),
+            "test": np.array(ts_split),
+        }
+        np.save("./splits.npy", splits)
 
         # Create PyTorch Datasets and DataLoaders for train and validation
         tr_dataset = VideoDataset(tr_split, fr_per_vid, tr_transforms)
@@ -157,20 +196,22 @@ def main(args):
         dataloaders = train_val_dloaders(tr_dataset, val_dataset, batch_size, model_type)
 
         # Define the loss function, optimizer, and learning rate scheduler
-        loss_func = nn.CrossEntropyLoss(reduction='sum')
+        loss_func = nn.CrossEntropyLoss(reduction="sum")
         opt = optim.Adam(model.parameters(), lr=learning_rate)
-        lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.5, patience=5)
+        lr_scheduler = ReduceLROnPlateau(opt, mode="min", factor=0.5, patience=5)
         os.makedirs("./models", exist_ok=True)
-        optim_model_dir = './models'
+        optim_model_dir = "./models"
 
         # Main training procedure
         model.to(device)
-        model, loss_hist, acc_hist = train(dataloaders, model, loss_func, opt, lr_scheduler, device, optim_model_dir, n_epochs)
+        model, _loss_hist, _acc_hist = train(
+            dataloaders, model, loss_func, opt, lr_scheduler, device, optim_model_dir, n_epochs
+        )
 
-    elif mode == 'eval':
+    elif mode == "eval":
         # Load saved dataset splits
-        splits = np.load('./splits.npy', allow_pickle=True)
-        ts_split = splits.item()['test']
+        splits = np.load("./splits.npy", allow_pickle=True)
+        ts_split = splits.item()["test"]
         ts_split = [(sample[0], int(sample[1])) for sample in ts_split]
 
         # Create PyTorch Dataset and DataLoader for the test set
@@ -180,24 +221,26 @@ def main(args):
         # Load the trained model checkpoint
         model.load_state_dict(torch.load(args.ckpt))
         model.to(device)
-        
-        # Unpack the 4 values returned by our updated test() function
-        targets, outputs, output_probs, accuracy = test(model, dataloaders['test'], device)
 
-        print('--- Evaluation Results ---')
-        print('Overall Test Accuracy: {:.4f}%'.format(100 * accuracy))
-        
+        # Unpack the 4 values returned by our updated test() function
+        targets, outputs, output_probs, accuracy = test(model, dataloaders["test"], device)
+
+        print("--- Evaluation Results ---")
+        print("Overall Test Accuracy: {:.4f}%".format(100 * accuracy))
+
         # Calculate and print our robust multiclass metrics
         f1_macro, auc_macro = get_multiclass_metrics(targets, outputs, output_probs)
-        print('Macro F1 Score: {:.4f}'.format(f1_macro))
-        print('Macro AUC Score (OvR): {:.4f}'.format(auc_macro))
-        print('--------------------------')
+        print("Macro F1 Score: {:.4f}".format(f1_macro))
+        print("Macro AUC Score (OvR): {:.4f}".format(auc_macro))
+        print("--------------------------")
 
         # Get the ordered list of the 50 class names directly from the data directory
         all_cats = sorted(os.listdir(args.frame_dir))
-        
+
         # Generate and save the confusion matrix heatmap
-        plot_and_save_confusion_matrix(targets, outputs, all_cats, save_path="./ucf50_confusion_matrix.png")
+        plot_and_save_confusion_matrix(
+            targets, outputs, all_cats, save_path="./ucf50_confusion_matrix.png"
+        )
         # Optionally, generate a detailed test report or confusion matrix:
         # print(get_test_report(targets, outputs, all_cats))
         # print(get_confusion_matrix(targets, outputs, labels_dict, all_cats))
@@ -205,6 +248,7 @@ def main(args):
     else:
         raise ValueError('The mode argument must be either "train" or "eval".')
 
+
 if __name__ == "__main__":
-    args = args_parser()
-    main(args)
+    parsed_args = args_parser()
+    main(parsed_args)
