@@ -16,7 +16,9 @@ Functions:
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-from sklearn.metrics import classification_report, multilabel_confusion_matrix, f1_score, roc_auc_score
+from sklearn.metrics import classification_report, multilabel_confusion_matrix, f1_score, roc_auc_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def test(model, dataloader, device):
     """
@@ -103,3 +105,32 @@ def get_confusion_matrix(targets, outputs, labels_dict, all_cats):
     output_cats = [inv_labels_dict[output] for output in outputs]
     confusion_mat = multilabel_confusion_matrix(target_cats, output_cats, labels=all_cats)
     return {label: mat for label, mat in zip(all_cats, confusion_mat)}
+
+def plot_and_save_confusion_matrix(targets, outputs, target_names, save_path="ucf50_confusion_matrix.png"):
+    """
+    Computes a standard multiclass confusion matrix, renders it as a heatmap, 
+    and saves it to disk.
+    """
+    # Compute the 50x50 confusion matrix
+    cm = confusion_matrix(targets, outputs)
+    
+    # Set up the matplotlib figure (large enough to read 50 class labels)
+    plt.figure(figsize=(22, 20))
+    
+    # Create a beautifully formatted heatmap using seaborn
+    sns.heatmap(cm, annot=False, cmap='Blues', 
+                xticklabels=target_names, yticklabels=target_names)
+    
+    plt.ylabel('True Action Class', fontsize=16)
+    plt.xlabel('Predicted Action Class', fontsize=16)
+    plt.title('UCF50 LRCN Confusion Matrix', fontsize=20)
+    
+    # Rotate the x-axis labels so they don't overlap
+    plt.xticks(rotation=90, fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.tight_layout()
+    
+    # Save to disk
+    plt.savefig(save_path, dpi=300)
+    print(f"\n[Success] Confusion matrix heatmap saved to: {save_path}")
+    plt.close()

@@ -36,7 +36,7 @@ from video_datasets import VideoDataset, load_dataset, dataset_split
 from utils import transform_stats, compose_data_transforms, train_val_dloaders, test_dloaders
 from models import LRCN
 from train import train
-from test import test, get_test_report, get_confusion_matrix, get_multiclass_metrics
+from test import test, get_test_report, get_confusion_matrix, get_multiclass_metrics,plot_and_save_confusion_matrix
 
 def args_parser():
     """
@@ -192,6 +192,12 @@ def main(args):
         print('Macro F1 Score: {:.4f}'.format(f1_macro))
         print('Macro AUC Score (OvR): {:.4f}'.format(auc_macro))
         print('--------------------------')
+
+        # Get the ordered list of the 50 class names directly from the data directory
+        all_cats = sorted(os.listdir(args.frame_dir))
+        
+        # Generate and save the confusion matrix heatmap
+        plot_and_save_confusion_matrix(targets, outputs, all_cats, save_path="./ucf50_confusion_matrix.png")
         # Optionally, generate a detailed test report or confusion matrix:
         # print(get_test_report(targets, outputs, all_cats))
         # print(get_confusion_matrix(targets, outputs, labels_dict, all_cats))
