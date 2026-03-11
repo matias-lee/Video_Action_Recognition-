@@ -8,51 +8,61 @@ and compute a multilabel confusion matrix for all classes.
 Functions:
     - test: Evaluates the model on a test DataLoader and returns the ground truth labels,
       predicted labels, and overall accuracy.
+    - get_multiclass_metrics: Computes Macro F1 and Macro AUC scores for multiclass evaluation.
     - get_test_report: Generates a classification report using scikit-learn's classification_report.
     - get_confusion_matrix: Computes a multilabel confusion matrix for each class.
 """
 
 import torch
+import torch.nn.functional as F
 from tqdm import tqdm
-from sklearn.metrics import classification_report, multilabel_confusion_matrix
+from sklearn.metrics import classification_report, multilabel_confusion_matrix, f1_score, roc_auc_score
 
 def test(model, dataloader, device):
     """
     Evaluate the model on the test dataset and compute overall accuracy.
-    
-    This function sets the model to evaluation mode and processes the test data
-    from the provided DataLoader. It computes predictions for each batch, counts the number
-    of correct predictions, and accumulates the true and predicted labels.
-    
-    Args:
-        model (torch.nn.Module): The trained video classification model.
-        dataloader (torch.utils.data.DataLoader): DataLoader containing the test dataset.
-        device (torch.device): The device (CPU or GPU) on which to perform evaluation.
-    
-    Returns:
-        tuple: (targets, outputs, accuracy)
-            - targets (list): Ground truth labels for all samples.
-            - outputs (list): Predicted labels for all samples.
-            - accuracy (float): Overall accuracy computed as the ratio of correct predictions
-                                to the total number of samples.
+    Returns targets, outputs, output_probs, and accuracy.
     """
     model.eval()
     with torch.no_grad():
         total_correct_preds = 0.0
         len_dataset = len(dataloader.dataset)
-        targets, outputs = [], []
+        targets, outputs, output_probs = [], [], []
+        
         for x_batch, y_batch in tqdm(dataloader):
             x_batch, y_batch = x_batch.to(device), y_batch.to(device)
-            output = model(x_batch)
-            pred = output.argmax(dim=1, keepdim=True)
+            
+            # Get raw logits from the model
+            logits = model(x_batch)
+            
+            # Convert logits to probabilities for AUC calculation
+            probs = F.softmax(logits, dim=1)
+            
+            # Get predicted classes
+            pred = logits.argmax(dim=1, keepdim=True)
             correct_preds = pred.eq(y_batch.view_as(pred)).sum().item()
             total_correct_preds += correct_preds
+            
+            # Store targets, predictions, and probabilities
             outputs.extend(pred.view(-1).detach().cpu().numpy().tolist())
             targets.extend(y_batch.detach().cpu().numpy().tolist())
+            output_probs.extend(probs.detach().cpu().numpy().tolist())
         
         accuracy = total_correct_preds / float(len_dataset)
     
-    return targets, outputs, accuracy
+    return targets, outputs, output_probs, accuracy
+
+def get_multiclass_metrics(targets, outputs, output_probs):
+    """
+    Compute Macro F1 and Macro AUC (One-vs-Rest) scores for multiclass evaluation.
+    """
+    # Calculate Macro F1
+    f1_macro = f1_score(targets, outputs, average='macro')
+    
+    # Calculate Macro AUC (One-vs-Rest handles multiclass by comparing each class against all others)
+    auc_macro = roc_auc_score(targets, output_probs, multi_class='ovr', average='macro')
+    
+    return f1_macro, auc_macro
 
 def get_test_report(target, output, target_names):
     """

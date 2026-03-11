@@ -36,7 +36,7 @@ from video_datasets import VideoDataset, load_dataset, dataset_split
 from utils import transform_stats, compose_data_transforms, train_val_dloaders, test_dloaders
 from models import LRCN
 from train import train
-from test import test, get_test_report, get_confusion_matrix
+from test import test, get_test_report, get_confusion_matrix, get_multiclass_metrics
 
 def args_parser():
     """
@@ -180,9 +180,18 @@ def main(args):
         # Load the trained model checkpoint
         model.load_state_dict(torch.load(args.ckpt))
         model.to(device)
-        targets, outputs, accuracy = test(model, dataloaders['test'], device)
+        
+        # Unpack the 4 values returned by our updated test() function
+        targets, outputs, output_probs, accuracy = test(model, dataloaders['test'], device)
 
-        print('The overall test accuracy is {:.4f}%.'.format(100 * accuracy))
+        print('--- Evaluation Results ---')
+        print('Overall Test Accuracy: {:.4f}%'.format(100 * accuracy))
+        
+        # Calculate and print our robust multiclass metrics
+        f1_macro, auc_macro = get_multiclass_metrics(targets, outputs, output_probs)
+        print('Macro F1 Score: {:.4f}'.format(f1_macro))
+        print('Macro AUC Score (OvR): {:.4f}'.format(auc_macro))
+        print('--------------------------')
         # Optionally, generate a detailed test report or confusion matrix:
         # print(get_test_report(targets, outputs, all_cats))
         # print(get_confusion_matrix(targets, outputs, labels_dict, all_cats))
